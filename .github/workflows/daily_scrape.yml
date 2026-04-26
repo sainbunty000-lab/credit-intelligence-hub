@@ -30,5 +30,5 @@ jobs:
           playwright install-deps
 
       - name: Run Scraper
-        run: python src/tender_scraper.py
+        run: python tender_scraper.py
 
