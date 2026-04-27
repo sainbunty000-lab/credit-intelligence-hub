@@ -22,8 +22,6 @@ jobs:
         with:
           workload_identity_provider: 'projects/915306901665/locations/global/workloadIdentityPools/github-actions-pool/providers/github-provider'
           service_account: 'lead-bot@my-project-47986-leads.iam.gserviceaccount.com'
-          token_format: 'access_token'
-          access_token_scopes: 'https://www.googleapis.com/auth/spreadsheets'
 
       - name: Run Scraper
         env:
