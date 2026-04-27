@@ -6,7 +6,6 @@ on:
 jobs:
   scrape_b2b:
     runs-on: ubuntu-latest
-    # REQUIRED: These permissions allow GitHub to generate the OIDC token for Google Cloud
     permissions:
       contents: 'read'
       id-token: 'write' 
