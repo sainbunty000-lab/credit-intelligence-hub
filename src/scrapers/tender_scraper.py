@@ -88,6 +88,7 @@ def run_tender_scraper():
     existing_ids = sheets.get_existing_ids(col_index=1)
 
     items = scrape_all_sources()
+    logger.info(f"DEBUG: Scraped items = {len(items)}")
 
     if not items:
         logger.info("❌ No tenders found")
@@ -110,6 +111,7 @@ def run_tender_scraper():
     # Funding Filter
     # ----------------------------
     filtered_items = items  # 🔥 TEMP DEBUG MODE
+    logger.info(f"DEBUG: After filter = {len(filtered_items)}")
 
     if not filtered_items:
         logger.info("❌ No funding opportunities (tender)")
@@ -131,6 +133,7 @@ def run_tender_scraper():
     # Deduplication
     # ----------------------------
     new_items = filter_new_items(top_items, existing_ids)
+    logger.info(f"DEBUG: New items = {len(new_items)}")
 
     if not new_items:
         logger.info("✅ No new tender leads")
