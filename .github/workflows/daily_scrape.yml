@@ -5,9 +5,16 @@ on:
     - cron: '0 9 * * *'
   workflow_dispatch:
 
+concurrency:
+  group: tender-job
+  cancel-in-progress: true
+
 jobs:
   scrape:
+    name: Run Tender Pipeline
     runs-on: ubuntu-latest
+
+    timeout-minutes: 30
 
     permissions:
       contents: read
@@ -29,7 +36,7 @@ jobs:
           python-version: '3.10'
 
       # ----------------------------
-      # Cache dependencies (FASTER)
+      # Cache pip
       # ----------------------------
       - name: Cache pip
         uses: actions/cache@v4
@@ -38,10 +45,11 @@ jobs:
           key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
 
       # ----------------------------
-      # Install dependencies
+      # Install Dependencies
       # ----------------------------
       - name: Install dependencies
         run: |
+          pip install --upgrade pip
           pip install -r requirements.txt
           playwright install --with-deps
 
@@ -55,7 +63,7 @@ jobs:
           service_account: lead-bot@my-project-47986-leads.iam.gserviceaccount.com
 
       # ----------------------------
-      # Run Scraper (with retry)
+      # Run Tender Job (with retry)
       # ----------------------------
       - name: Run scraper
         env:
@@ -65,5 +73,6 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
           for i in 1 2 3; do
+            echo "Attempt $i..."
             python -m src.main && break || sleep 10
           done
