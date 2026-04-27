@@ -27,6 +27,8 @@ def run():
 if __name__ == "__main__":
     try:
         run()
+
     except Exception as e:
+        logger.exception("❌ Job failed")   # 🔥 better logging
         handle_error(e, context=JOB_TYPE)
-        raise  # VERY IMPORTANT → ensures GitHub marks job as failed
+        raise  # ensures GitHub marks job as failed
