@@ -1,0 +1,19 @@
+name: B2B Trade Monitor
+on:
+  schedule:
+    - cron: '0 10 * * *'
+  workflow_dispatch:
+jobs:
+  scrape_b2b:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - run: pip install -r requirements.txt && playwright install chromium
+      - name: Run B2B Monitor
+        env:
+          B2B_BOT_TOKEN: ${{ secrets.B2B_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python src/b2b_monitor.py
