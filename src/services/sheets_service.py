@@ -13,112 +13,58 @@ logger = logging.getLogger(__name__)
 
 class SheetsService:
     def __init__(self):
-        self.client = self._init_client()
-        self.sheet = self._open_sheet()
+        self.enabled = False
+        self.client = None
+        self.sheet = None
 
-    def _init_client(self):
-        """Initialize gspread client using Workload Identity credentials"""
         try:
             creds = get_gcp_credentials()
 
-            # Ensure token is valid
             if not creds.valid:
                 creds.refresh(Request())
 
-            client = gspread.authorize(creds)
-            logger.info("✅ Google Sheets client initialized")
-            return client
+            self.client = gspread.authorize(creds)
+            self.sheet = self.client.open(SHEET_NAME or "Lead_Tracker").sheet1
+
+            self.enabled = True
+            logger.info("✅ Google Sheets connected")
 
         except Exception as e:
-            logger.error(f"❌ Failed to initialize Sheets client: {e}")
-            raise
-
-    def _open_sheet(self):
-        """Open the target Google Sheet"""
-        try:
-            sheet_name = SHEET_NAME or "Lead_Tracker"
-            sheet = self.client.open(sheet_name).sheet1
-            logger.info(f"📊 Connected to sheet: {sheet_name}")
-            return sheet
-
-        except Exception as e:
-            logger.error(f"❌ Failed to open sheet: {e}")
-            raise
+            logger.warning(f"⚠️ Sheets disabled (local mode): {e}")
 
     # ----------------------------
-    # WRITE OPERATIONS
+    # WRITE
     # ----------------------------
 
-    def append_row(self, row: List[str], retries: int = 3):
-        """Append a single row with retry logic"""
-        for attempt in range(retries):
-            try:
-                self.sheet.append_row(row, value_input_option="USER_ENTERED")
-                logger.info("✅ Row appended successfully")
-                return
-            except Exception as e:
-                logger.warning(f"⚠️ Append row failed (attempt {attempt+1}): {e}")
-                time.sleep(2 ** attempt)
-
-        logger.error("❌ Failed to append row after retries")
-        raise Exception("Append row failed")
-
-    def append_rows(self, rows: List[List[str]], retries: int = 3):
-        """Append multiple rows efficiently"""
+    def append_rows(self, rows: List[List[str]]):
         if not rows:
-            logger.info("⚠️ No rows to append")
             return
 
-        for attempt in range(retries):
+        if not self.enabled:
+            print("\n📊 LOCAL OUTPUT:")
+            for r in rows:
+                print(r)
+            print("\n")
+            return
+
+        for i in range(3):
             try:
                 self.sheet.append_rows(rows, value_input_option="USER_ENTERED")
-                logger.info(f"✅ {len(rows)} rows appended successfully")
                 return
             except Exception as e:
-                logger.warning(f"⚠️ Append rows failed (attempt {attempt+1}): {e}")
-                time.sleep(2 ** attempt)
-
-        logger.error("❌ Failed to append rows after retries")
-        raise Exception("Append rows failed")
+                logger.warning(f"Retry {i+1}: {e}")
+                time.sleep(2 ** i)
 
     # ----------------------------
-    # READ OPERATIONS
-    # ----------------------------
-
-    def get_all_records(self):
-        """Fetch all records as list of dicts"""
-        try:
-            records = self.sheet.get_all_records()
-            logger.info(f"📥 Retrieved {len(records)} records")
-            return records
-        except Exception as e:
-            logger.error(f"❌ Failed to fetch records: {e}")
-            raise
-
-    def get_column_values(self, col_index: int):
-        """Fetch all values from a specific column"""
-        try:
-            values = self.sheet.col_values(col_index)
-            logger.info(f"📥 Retrieved {len(values)} values from column {col_index}")
-            return values
-        except Exception as e:
-            logger.error(f"❌ Failed to fetch column values: {e}")
-            raise
-
-    # ----------------------------
-    # DEDUP SUPPORT
+    # READ
     # ----------------------------
 
     def get_existing_ids(self, col_index: int = 1):
-        """
-        Fetch existing IDs (for deduplication)
-        Default: column 1
-        """
+        if not self.enabled:
+            return set()
+
         try:
             values = self.sheet.col_values(col_index)
-            existing_ids = set(values[1:])  # skip header
-            logger.info(f"🔍 Loaded {len(existing_ids)} existing IDs")
-            return existing_ids
-        except Exception as e:
-            logger.error(f"❌ Failed to fetch existing IDs: {e}")
-            raise
+            return set(values[1:])
+        except:
+            return set()
