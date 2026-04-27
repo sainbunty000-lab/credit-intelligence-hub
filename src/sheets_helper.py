@@ -1,15 +1,19 @@
-import os
-import json
 import gspread
-from oauth2client.service_account import ServiceAccountCredentials
+from google.auth import default
 
-def log_to_sheets(lead_name, industry, source):
-    # Load credentials from GitHub Secret
-    creds_dict = json.loads(os.getenv('GOOGLE_SHEETS_CREDENTIALS'))
-    scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-    creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
+def get_sheet(sheet_name="Lead_Tracker"):
+    """Connects to Google Sheets using your GitHub Action credentials."""
+    # This automatically detects the credentials from your Workload Identity setup
+    creds, _ = default()
     client = gspread.authorize(creds)
-    
-    # Open sheet and append row
-    sheet = client.open("Lead_Tracker").sheet1
-    sheet.append_row(["2026-04-27", lead_name, industry, "New Lead", source])
+    return client.open(sheet_name).sheet1
+
+def add_lead(sheet, lead_data):
+    """Appends a new lead row to the sheet."""
+    try:
+        # data should be a list, e.g., ['2026-04-27', 'Company Name', 'Industry', 'New Lead']
+        sheet.append_row(lead_data)
+        return True
+    except Exception as e:
+        print(f"Error adding lead: {e}")
+        return False
