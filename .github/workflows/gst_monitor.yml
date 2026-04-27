@@ -6,15 +6,26 @@ on:
 jobs:
   scrape_b2b:
     runs-on: ubuntu-latest
+    # Add permissions for WIF
+    permissions:
+      contents: 'read'
+      id-token: 'write' 
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.10'
       - run: pip install -r requirements.txt && playwright install chromium
+      
+      - name: Authenticate to Google Cloud
+        id: 'auth'
+        uses: 'google-github-actions/auth@v2'
+        with:
+          workload_identity_provider: 'projects/915306901665/locations/global/workloadIdentityPools/github-actions-pool/providers/github-provider'
+          service_account: 'lead-bot@my-project-47986-leads.iam.gserviceaccount.com'
+
       - name: Run B2B Monitor
         env:
           B2B_BOT_TOKEN: ${{ secrets.B2B_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          GOOGLE_SHEETS_CREDENTIALS: ${{ secrets.GOOGLE_SHEETS_CREDENTIALS }}
         run: python src/b2b_monitor.py
