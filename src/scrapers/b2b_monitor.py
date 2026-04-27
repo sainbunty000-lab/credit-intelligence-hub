@@ -85,6 +85,7 @@ def run_b2b_monitor():
     existing_ids = sheets.get_existing_ids(col_index=1)
 
     items = scrape_b2b_sources()
+    logger.info(f"DEBUG: Scraped items = {len(items)}")
 
     if not items:
         logger.info("❌ No B2B data found")
@@ -105,6 +106,7 @@ def run_b2b_monitor():
     # Funding Filter
     # ----------------------------
     filtered_items = items  # 🔥 TEMP DEBUG MODE
+    logger.info(f"DEBUG: After filter = {len(filtered_items)}")
 
     if not filtered_items:
         logger.info("❌ No funding opportunities (B2B)")
@@ -126,6 +128,7 @@ def run_b2b_monitor():
     # Deduplication
     # ----------------------------
     new_items = filter_new_items(top_items, existing_ids)
+    logger.info(f"DEBUG: New items = {len(new_items)}")
 
     if not new_items:
         logger.info("✅ No new B2B leads")
