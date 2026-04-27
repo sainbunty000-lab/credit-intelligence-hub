@@ -32,3 +32,7 @@ if __name__ == "__main__":
         logger.exception("❌ Job failed")   # 🔥 better logging
         handle_error(e, context=JOB_TYPE)
         raise  # ensures GitHub marks job as failed
+
+TelegramService().send_message("✅ FINAL TEST")
+
+
