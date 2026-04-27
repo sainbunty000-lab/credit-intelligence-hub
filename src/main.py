@@ -1,6 +1,7 @@
 from utils.logger import setup_logger
 from config.settings import JOB_TYPE
 from utils.error_handler import handle_error
+from services.telegram_service import TelegramService
 
 from scrapers.tender_scraper import run_tender_scraper
 from scrapers.b2b_monitor import run_b2b_monitor
@@ -33,6 +34,4 @@ if __name__ == "__main__":
         handle_error(e, context=JOB_TYPE)
         raise  # ensures GitHub marks job as failed
 
-TelegramService().send_message("✅ FINAL TEST")
-
-
+    TelegramService().send_message("✅ FINAL TEST")
