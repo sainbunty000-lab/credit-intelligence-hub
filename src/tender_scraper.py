@@ -3,55 +3,68 @@ import gspread
 import requests
 from google.auth import default
 from playwright.sync_api import sync_playwright
+from bs4 import BeautifulSoup
 
-# 1. Setup Auth
+# --- CONFIGURATION ---
+KEYWORDS = ["supply", "construction", "procurement", "infrastructure", "wholesale", 
+            "manufacturing", "engineering", "fabrication", "logistics", "printing", 
+            "maintenance", "sanitation", "consultancy", "catering", "electrical", 
+            "mechanical", "civil", "trading", "distribution", "installation", "hiring"]
+
+# 1. Auth Setup
 creds, _ = default()
 client = gspread.authorize(creds)
 sheet = client.open("Lead_Tracker").sheet1
 
-# 2. Telegram Helper
-def send_telegram(message):
+def send_telegram_alert(message):
     token = os.getenv("TELEGRAM_BOT_TOKEN")
     chat_id = os.getenv("TELEGRAM_CHAT_ID")
-    url = f"https://api.telegram.org/bot{token}/sendMessage"
-    requests.post(url, json={"chat_id": chat_id, "text": message})
+    if token and chat_id:
+        url = f"https://api.telegram.org/bot{token}/sendMessage"
+        # Using POST with JSON is safer than GET
+        payload = {"chat_id": chat_id, "text": message}
+        requests.post(url, json=payload)
 
-# 3. Duplicate Prevention
-def get_existing_ids():
-    # Gets all values from the first column (assuming it's a unique ID)
-    return sheet.col_values(1) 
-
-def main():
-    print("Scraping starting...")
-    existing_tenders = get_existing_ids()
-    new_tenders_found = []
-
+def run_scraper():
+    print("Starting Scraper...")
+    existing_ids = sheet.col_values(1) # To prevent duplicates
+    
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True) # Runs in background
+        browser = p.chromium.launch(headless=True)
         page = browser.new_page()
         
-        # --- REPLACE THIS URL WITH YOUR TARGET SITE ---
-        page.goto("https://YOUR_TARGET_WEBSITE_HERE.com")
+        # NOTE: You may need to navigate to the specific "Active Tenders" page
+        # Example: page.goto("https://etenders.hry.nic.in/nicgep/app?component=%24DirectLink&page=FrontEndActiveTenders&service=direct&session=T")
+        url = "https://etenders.hry.nic.in/nicgep/app"
+        page.goto(url, wait_until="networkidle")
         
-        # --- YOUR SCRAPING LOGIC HERE ---
-        # Example: tender_id = page.inner_text('.tender-id-selector')
-        # Example: title = page.inner_text('.title-selector')
+        # If there is a click needed, add it here:
+        # page.click("text=Active Tenders") 
         
-        # dummy logic for testing structure:
-        tender_id = "TENDER-101" 
-        title = "Sample Construction Tender"
-
-        # Check if new
-        if tender_id not in existing_tenders:
-            new_tenders_found.append([tender_id, title])
-            sheet.append_row([tender_id, title])
-            send_telegram(f"📢 New Tender: {title}")
-            print(f"Added {tender_id}")
+        soup = BeautifulSoup(page.content(), 'html.parser')
+        rows = soup.find_all('tr')
+        
+        for row in rows:
+            row_text = row.get_text().lower()
+            if any(key in row_text for key in KEYWORDS):
+                # Extract a unique ID (assuming first cell is the ID)
+                cells = row.find_all('td')
+                if len(cells) > 0:
+                    tender_id = cells[0].text.strip()
+                    
+                    if tender_id not in existing_ids:
+                        clean_text = " ".join(row_text.split())
+                        
+                        # Save to Sheet
+                        sheet.append_row([tender_id, clean_text[:200]])
+                        
+                        # Alert Telegram
+                        alert_msg = f"🔍 CREDIT OPPORTUNITY:\n{clean_text[:200]}..."
+                        send_telegram_alert(alert_msg)
+                        
+                        existing_ids.append(tender_id)
         
         browser.close()
-    
-    if not new_tenders_found:
-        print("No new tenders found today.")
 
 if __name__ == "__main__":
-    main()
+    run_scraper()
