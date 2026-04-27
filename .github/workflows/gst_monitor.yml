@@ -29,13 +29,22 @@ jobs:
           python-version: '3.10'
 
       # ----------------------------
-      # Cache dependencies
+      # Cache pip
       # ----------------------------
       - name: Cache pip
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+
+      # ----------------------------
+      # Cache Playwright browsers (FASTER)
+      # ----------------------------
+      - name: Cache Playwright
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}
 
       # ----------------------------
       # Install dependencies
@@ -61,8 +70,15 @@ jobs:
         env:
           JOB_TYPE: b2b
           SHEET_NAME: Lead_Tracker
+
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TELEGRAM_B2B_CHAT_ID: ${{ secrets.TELEGRAM_B2B_CHAT_ID }}
+
+          ENABLE_PRIORITY_FILTER: "true"
+          PRIORITY_THRESHOLD: "2"
+          MAX_WORKERS: "3"
+          DRY_RUN: "false"
+
         run: |
           for i in 1 2 3; do
             python -m src.main && break || sleep 10
