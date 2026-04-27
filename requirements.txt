@@ -1,11 +1,26 @@
-gspread==6.1.2
-google-auth==2.35.0
-google-auth-oauthlib==1.2.1
+# ----------------------------
+# Core
+# ----------------------------
+requests==2.31.0
 
-requests==2.32.3
+# ----------------------------
+# Playwright (scraping)
+# ----------------------------
+playwright==1.42.0
 
-playwright==1.48.0
+# ----------------------------
+# Google Sheets (WIF compatible)
+# ----------------------------
+gspread==5.12.0
+google-auth==2.28.1
+google-auth-oauthlib==1.2.0
 
+# ----------------------------
+# Utilities
+# ----------------------------
 python-dotenv==1.0.1
 
-urllib3>=2.2.2
+# ----------------------------
+# Optional (recommended)
+# ----------------------------
+tenacity==8.2.3   # retry logic (optional future use)
