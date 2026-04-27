@@ -5,9 +5,15 @@ on:
     - cron: '0 10 * * *'
   workflow_dispatch:
 
+concurrency:
+  group: b2b-job
+  cancel-in-progress: true
+
 jobs:
   scrape_b2b:
+    name: Run B2B Pipeline
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     permissions:
       contents: read
@@ -21,7 +27,7 @@ jobs:
         uses: actions/checkout@v4
 
       # ----------------------------
-      # Python setup
+      # Python Setup
       # ----------------------------
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -38,19 +44,11 @@ jobs:
           key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
 
       # ----------------------------
-      # Cache Playwright browsers (FASTER)
-      # ----------------------------
-      - name: Cache Playwright
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}
-
-      # ----------------------------
       # Install dependencies
       # ----------------------------
       - name: Install dependencies
         run: |
+          pip install --upgrade pip
           pip install -r requirements.txt
           playwright install --with-deps
 
@@ -64,7 +62,7 @@ jobs:
           service_account: lead-bot@my-project-47986-leads.iam.gserviceaccount.com
 
       # ----------------------------
-      # Run B2B job
+      # Run B2B job (with retry)
       # ----------------------------
       - name: Run B2B Monitor
         env:
@@ -72,14 +70,10 @@ jobs:
           SHEET_NAME: Lead_Tracker
 
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_B2B_CHAT_ID: ${{ secrets.TELEGRAM_B2B_CHAT_ID }}
-
-          ENABLE_PRIORITY_FILTER: "true"
-          PRIORITY_THRESHOLD: "2"
-          MAX_WORKERS: "3"
-          DRY_RUN: "false"
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_B2B_CHAT_ID }}
 
         run: |
           for i in 1 2 3; do
+            echo "Attempt $i..."
             python -m src.main && break || sleep 10
           done
