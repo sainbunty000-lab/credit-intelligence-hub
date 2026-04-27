@@ -1,19 +1,46 @@
 import requests
 import logging
 import time
-from typing import Optional
+from typing import List, Optional
 
-from config.settings import TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
+from config.settings import (
+    TELEGRAM_BOT_TOKEN,
+    TELEGRAM_TENDER_CHAT_ID,
+    TELEGRAM_B2B_CHAT_ID,
+    JOB_TYPE,
+    DRY_RUN,
+)
 
 logger = logging.getLogger(__name__)
 
-BASE_URL = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}"
-
 
 class TelegramService:
-    def __init__(self):
-        if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
-            raise ValueError("❌ Telegram credentials are not set in environment variables")
+    def __init__(self, chat_id: Optional[str] = None):
+        if not TELEGRAM_BOT_TOKEN:
+            raise ValueError("❌ Missing TELEGRAM_BOT_TOKEN")
+
+        # Auto-route chat based on job
+        if chat_id:
+            self.chat_id = chat_id
+        else:
+            self.chat_id = self._resolve_chat_id()
+
+        if not self.chat_id:
+            raise ValueError("❌ No Telegram chat_id configured")
+
+        self.base_url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}"
+
+    # ----------------------------
+    # CHAT ROUTING
+    # ----------------------------
+
+    def _resolve_chat_id(self) -> str:
+        if JOB_TYPE == "tender":
+            return TELEGRAM_TENDER_CHAT_ID
+        elif JOB_TYPE == "b2b":
+            return TELEGRAM_B2B_CHAT_ID
+        else:
+            return None
 
     # ----------------------------
     # CORE SEND METHOD
@@ -30,10 +57,14 @@ class TelegramService:
         Send a Telegram message with retry logic
         """
 
-        url = f"{BASE_URL}/sendMessage"
+        if DRY_RUN:
+            logger.info(f"[DRY_RUN] Telegram message:\n{text}")
+            return
+
+        url = f"{self.base_url}/sendMessage"
 
         payload = {
-            "chat_id": TELEGRAM_CHAT_ID,
+            "chat_id": self.chat_id,
             "text": text,
             "parse_mode": parse_mode,
             "disable_web_page_preview": disable_web_page_preview,
@@ -57,29 +88,35 @@ class TelegramService:
                     f"⚠️ Telegram request failed (attempt {attempt+1}): {e}"
                 )
 
-            time.sleep(2 ** attempt)  # exponential backoff
+            time.sleep(2 ** attempt)
 
         logger.error("❌ Failed to send Telegram message after retries")
         raise Exception("Telegram send_message failed")
 
     # ----------------------------
-    # FORMATTING HELPERS
+    # SAFE FORMATTING
     # ----------------------------
 
     @staticmethod
-    def format_tender(item: dict) -> str:
+    def escape_markdown(text: str) -> str:
         """
-        Format tender data into Telegram-friendly message
-        Expected keys: title, source, url, value, location
+        Escape Telegram Markdown special characters
         """
+        escape_chars = r"_*[]()~`>#+-=|{}.!"
+        return "".join(f"\\{c}" if c in escape_chars else c for c in text)
 
-        title = item.get("title", "N/A")
-        source = item.get("source", "N/A")
+    # ----------------------------
+    # FORMATTING HELPERS
+    # ----------------------------
+
+    def format_tender(self, item: dict) -> str:
+        title = self.escape_markdown(item.get("title", "N/A"))
+        source = self.escape_markdown(item.get("source", "N/A"))
         url = item.get("url", "")
-        value = item.get("value", "N/A")
-        location = item.get("location", "N/A")
+        value = self.escape_markdown(item.get("value", "N/A"))
+        location = self.escape_markdown(item.get("location", "N/A"))
 
-        message = (
+        return (
             f"*{title}*\n\n"
             f"📍 Location: {location}\n"
             f"💰 Value: {value}\n"
@@ -87,16 +124,26 @@ class TelegramService:
             f"[🔗 View Tender]({url})"
         )
 
-        return message
+    def format_b2b(self, item: dict) -> str:
+        title = self.escape_markdown(item.get("title", "N/A"))
+        source = self.escape_markdown(item.get("source", "N/A"))
+        url = item.get("url", "")
+        value = self.escape_markdown(item.get("value", "N/A"))
+        location = self.escape_markdown(item.get("location", "N/A"))
+
+        return (
+            f"*{title}*\n\n"
+            f"📍 Location: {location}\n"
+            f"💰 Value: {value}\n"
+            f"🏢 Source: {source}\n\n"
+            f"[🔗 View Lead]({url})"
+        )
 
     # ----------------------------
-    # BULK SEND (OPTIONAL)
+    # BULK SEND
     # ----------------------------
 
-    def send_bulk_messages(self, messages: list[str], delay: float = 1.0):
-        """
-        Send multiple messages with delay to avoid rate limits
-        """
+    def send_bulk_messages(self, messages: List[str], delay: float = 1.0):
         for msg in messages:
             try:
                 self.send_message(msg)
