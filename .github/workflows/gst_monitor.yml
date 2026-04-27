@@ -6,7 +6,7 @@ on:
 jobs:
   scrape_b2b:
     runs-on: ubuntu-latest
-    # Add permissions for WIF
+    # Required for WIF (OIDC) authentication
     permissions:
       contents: 'read'
       id-token: 'write' 
@@ -27,5 +27,5 @@ jobs:
       - name: Run B2B Monitor
         env:
           B2B_BOT_TOKEN: ${{ secrets.B2B_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TELEGRAM_CHAT_ID: ${{ secrets.B2B_TELEGRAM_CHAT_ID }}
         run: python src/b2b_monitor.py
