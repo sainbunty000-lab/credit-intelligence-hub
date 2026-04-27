@@ -1,6 +1,8 @@
 import hashlib
 from datetime import datetime
 
+from playwright.sync_api import sync_playwright
+
 from services.sheets_service import SheetsService
 from services.telegram_service import TelegramService
 
@@ -20,10 +22,55 @@ def generate_id(text: str) -> str:
 
 
 # ----------------------------
-# SCRAPER (REPLACE WITH REAL DATA)
+# SCRAPER (IndiaMART STYLE)
 # ----------------------------
 def scrape_b2b_sources():
-    return []  # TODO: implement
+    results = []
+
+    try:
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            page = browser.new_page()
+
+            logger.info("🌐 Opening B2B source")
+
+            # Example search (you can refine later)
+            page.goto("https://dir.indiamart.com/search.mp?ss=construction", timeout=60000)
+
+            page.wait_for_timeout(5000)
+
+            items = page.query_selector_all(".cardbody")
+
+            for item in items[:15]:
+                try:
+                    title_el = item.query_selector("a")
+
+                    if not title_el:
+                        continue
+
+                    title = title_el.inner_text().strip()
+                    url = title_el.get_attribute("href")
+
+                    results.append({
+                        "title": title,
+                        "source": "IndiaMART",
+                        "url": url or "https://dir.indiamart.com",
+                        "location": "",  # often not directly available
+                        "value": "",     # B2B rarely shows value
+                        "description": title,
+                    })
+
+                except Exception:
+                    continue
+
+            browser.close()
+
+    except Exception as e:
+        logger.error(f"❌ B2B scraping failed: {e}")
+
+    logger.info(f"📊 Scraped {len(results)} B2B items")
+
+    return results
 
 
 # ----------------------------
@@ -49,25 +96,31 @@ def run_b2b_monitor():
     items = tag_demand(items)
 
     # ----------------------------
+    # TEMP TEST (IMPORTANT)
+    # ----------------------------
+    # Uncomment this for first run if nothing passes filter
+    # filtered_items = items
+
+    # ----------------------------
     # Funding Filter
     # ----------------------------
-    items = [i for i in items if is_funding_opportunity(i)]
+    filtered_items = [i for i in items if is_funding_opportunity(i)]
 
-    if not items:
+    if not filtered_items:
         logger.info("❌ No funding opportunities (B2B)")
         return
 
     # ----------------------------
     # Scoring
     # ----------------------------
-    for item in items:
+    for item in filtered_items:
         item["score"] = score_lead(item)
 
     # Sort by score
-    items = sorted(items, key=lambda x: x["score"], reverse=True)
+    filtered_items = sorted(filtered_items, key=lambda x: x["score"], reverse=True)
 
     # Take TOP 3
-    top_items = items[:3]
+    top_items = filtered_items[:3]
 
     # ----------------------------
     # Deduplication
@@ -107,12 +160,11 @@ def run_b2b_monitor():
     for i, item in enumerate(new_items, 1):
         message += (
             f"{i}. *{item['title']}*\n"
-            f"📦 Demand\n"
-            f"💰 {item.get('value','N/A')}\n"
+            f"📦 Demand Signal\n"
             f"📍 {item.get('location','N/A')}\n\n"
         )
 
-    message += "👉 Action: Call immediately"
+    message += "👉 Action: Reach out for working capital discussion"
 
     telegram.send_message(message)
 
