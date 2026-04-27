@@ -1,5 +1,6 @@
 from utils.logger import setup_logger
 from config.settings import JOB_TYPE
+from utils.error_handler import handle_error
 
 from scrapers.tender_scraper import run_tender_scraper
 from scrapers.b2b_monitor import run_b2b_monitor
@@ -9,11 +10,6 @@ logger = setup_logger("main")
 
 
 def run():
-    """
-    Main entry point for all jobs
-    Controlled via JOB_TYPE env variable
-    """
-
     logger.info(f"🚀 Starting job: {JOB_TYPE}")
 
     if JOB_TYPE == "tender":
@@ -29,4 +25,8 @@ def run():
 
 
 if __name__ == "__main__":
-    run()
+    try:
+        run()
+    except Exception as e:
+        handle_error(e, context=JOB_TYPE)
+        raise  # VERY IMPORTANT → ensures GitHub marks job as failed
