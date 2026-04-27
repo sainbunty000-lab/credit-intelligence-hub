@@ -13,7 +13,6 @@ jobs:
   scrape:
     name: Run Tender Pipeline
     runs-on: ubuntu-latest
-
     timeout-minutes: 30
 
     permissions:
@@ -21,51 +20,40 @@ jobs:
       id-token: write
 
     steps:
-      # ----------------------------
       # Checkout
-      # ----------------------------
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      # ----------------------------
-      # Python Setup
-      # ----------------------------
+      # Python setup
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
-      # ----------------------------
       # Cache pip
-      # ----------------------------
       - name: Cache pip
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
 
-      # ----------------------------
-      # Install Dependencies
-      # ----------------------------
+      # Install dependencies (FIXED)
       - name: Install dependencies
         run: |
           pip install --upgrade pip
           pip install -r requirements.txt
-          playwright install --with-deps
+          playwright install chromium
 
-      # ----------------------------
       # Authenticate (WIF)
-      # ----------------------------
       - name: Authenticate to Google Cloud
+        id: auth
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: projects/915306901665/locations/global/workloadIdentityPools/github-actions-pool/providers/github-provider
           service_account: lead-bot@my-project-47986-leads.iam.gserviceaccount.com
 
-      # ----------------------------
-      # Run Tender Job (with retry)
-      # ----------------------------
-      - name: Run scraper
+      # Run scraper
+      - name: Run Tender Job
         env:
           JOB_TYPE: tender
           SHEET_NAME: Lead_Tracker
