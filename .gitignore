@@ -1,8 +1,22 @@
-# Python environment
-venv/
+# --- Python ---
 __pycache__/
-
-# Credentials/Secrets (If you add API keys later)
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
 .env
-*.log
 
+# --- Playwright ---
+ms-playwright/
+
+# --- IDEs ---
+.vscode/
+.idea/
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+
+# --- Logs ---
+*.log
