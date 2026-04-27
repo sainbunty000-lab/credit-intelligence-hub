@@ -1,22 +1,80 @@
-# --- Python ---
+# ----------------------------
+# PYTHON
+# ----------------------------
 __pycache__/
 *.py[cod]
 *$py.class
+
+# Virtual environments
 venv/
+.env/
 .venv/
 env/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+
+# ----------------------------
+# ENV FILES (IMPORTANT)
+# ----------------------------
 .env
+.env.*
+!.env.example
 
-# --- Playwright ---
+# ----------------------------
+# LOGS
+# ----------------------------
+*.log
+logs/
+
+# ----------------------------
+# PLAYWRIGHT
+# ----------------------------
+# Browser binaries cache (optional to ignore)
 ms-playwright/
+.playwright/
 
-# --- IDEs ---
+# Screenshots / traces (if you add later)
+test-results/
+playwright-report/
+
+# ----------------------------
+# IDE / EDITOR
+# ----------------------------
 .vscode/
 .idea/
+*.swp
+*.swo
 
-# --- OS ---
+# ----------------------------
+# OS FILES
+# ----------------------------
 .DS_Store
 Thumbs.db
 
-# --- Logs ---
-*.log
+# ----------------------------
+# GCP / CREDENTIALS (EXTRA SAFETY)
+# ----------------------------
+*.json
+*credentials*
+*service_account*
+
+# ----------------------------
+# TEMP FILES
+# ----------------------------
+*.tmp
+*.temp
+
+# ----------------------------
+# COVERAGE / TESTING
+# ----------------------------
+.coverage
+htmlcov/
+.pytest_cache/
+
+# ----------------------------
+# NOTEBOOKS (if ever used)
+# ----------------------------
+.ipynb_checkpoints/
