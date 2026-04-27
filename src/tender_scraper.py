@@ -1,45 +1,34 @@
 import os
+import gspread
 import requests
-from playwright.sync_api import sync_playwright
-from bs4 import BeautifulSoup
-from sheets_helper import log_to_sheets
+from google.auth import default
 
-def send_telegram_alert(message):
-    token = os.getenv("TELEGRAM_BOT_TOKEN")
-    chat_id = os.getenv("TELEGRAM_CHAT_ID")
-    if token and chat_id:
-        url = f"https://api.telegram.org/bot{token}/sendMessage"
-        params = {"chat_id": chat_id, "text": message}
-        try:
-            requests.get(url, params=params)
-        except Exception as e:
-            print(f"Telegram Error: {e}")
+# 1. Setup Google Sheets Authentication (Uses Workload Identity automatically)
+creds, _ = default()
+client = gspread.authorize(creds)
+sheet = client.open("Lead_Tracker").sheet1
 
-def run_scraper():
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        page = browser.new_page()
-        page.goto("https://etenders.hry.nic.in/nicgep/app", wait_until="networkidle")
-        page.wait_for_timeout(5000)
-        
-        soup = BeautifulSoup(page.content(), 'html.parser')
-        rows = soup.find_all('tr')
-        
-        for row in rows:
-            row_text = row.get_text().lower()
-            if any(k in row_text for k in ["supply", "construction", "procurement"]):
-                alert_msg = f"🔍 TENDER LEAD:\n{row_text[:150]}"
-                
-                # 1. Notify
-                send_telegram_alert(alert_msg)
-                
-                # 2. Log to CRM
-                try:
-                    log_to_sheets(row_text[:50], "Tender Lead", "https://etenders.hry.nic.in/nicgep/app")
-                except Exception as e:
-                    print(f"Sheet Logging Error: {e}")
-                    
-        browser.close()
+# 2. Setup Telegram details
+BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
+
+def send_telegram(message):
+    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+    payload = {"chat_id": CHAT_ID, "text": message}
+    requests.post(url, json=payload)
+
+def main():
+    print("Starting Tender Scraper...")
+    
+    # --- YOUR SCRAPING LOGIC GOES HERE ---
+    # Example: leads = scrape_site_logic()
+    leads = [{"id": "T123", "details": "Sample Tender"}] 
+    
+    # --- UPDATE SHEET ---
+    for lead in leads:
+        sheet.append_row([lead['id'], lead['details']])
+        send_telegram(f"New Tender Found: {lead['details']}")
+        print(f"Added {lead['id']} to sheet.")
 
 if __name__ == "__main__":
-    run_scraper()
+    main()
