@@ -6,15 +6,25 @@ on:
 jobs:
   scrape:
     runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write' 
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.10'
       - run: pip install -r requirements.txt && playwright install chromium
+      
+      - name: Authenticate to Google Cloud
+        id: 'auth'
+        uses: 'google-github-actions/auth@v2'
+        with:
+          workload_identity_provider: 'projects/915306901665/locations/global/workloadIdentityPools/github-actions-pool/providers/github-provider'
+          service_account: 'lead-bot@my-project-47986-leads.iam.gserviceaccount.com'
+
       - name: Run Scraper
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          GOOGLE_SHEETS_CREDENTIALS: ${{ secrets.GOOGLE_SHEETS_CREDENTIALS }}
         run: python src/tender_scraper.py
