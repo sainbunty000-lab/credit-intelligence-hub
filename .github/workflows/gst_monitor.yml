@@ -16,4 +16,5 @@ jobs:
         env:
           B2B_BOT_TOKEN: ${{ secrets.B2B_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          GOOGLE_SHEETS_CREDENTIALS: ${{ secrets.GOOGLE_SHEETS_CREDENTIALS }}
         run: python src/b2b_monitor.py
