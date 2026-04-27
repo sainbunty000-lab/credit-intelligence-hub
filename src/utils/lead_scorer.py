@@ -1,68 +1,61 @@
-import re
-
-
-def normalize_text(item: dict) -> str:
-    return " ".join([
-        str(item.get("location", "")),
-        str(item.get("title", "")),
-        str(item.get("description", ""))
-    ]).lower()
-
-
-def extract_value_lakh(value: str) -> float:
-    if not value:
-        return 0
-
-    value = value.lower().replace(",", "").strip()
-
-    match = re.search(r"(\d+(\.\d+)?)", value)
-    if not match:
-        return 0
-
-    num = float(match.group(1))
-
-    if "cr" in value or "crore" in value:
-        return num * 100
-    if "lakh" in value:
-        return num
-
-    return 0
-
-
 def score_lead(item: dict) -> int:
     score = 0
-    text = normalize_text(item)
+
+    title = item.get("title", "").lower()
+    location = item.get("location", "").lower()
+    value = item.get("value", "").lower()
 
     # ----------------------------
-    # LOCATION (must-have signal)
+    # 1. LOCATION (HIGH PRIORITY)
     # ----------------------------
-    if "gurgaon" in text or "gurugram" in text:
+    if "gurgaon" in location or "gurugram" in location:
         score += 5
-    elif "haryana" in text:
+    elif "haryana" in location:
         score += 3
 
     # ----------------------------
-    # VALUE (graduated scoring)
+    # 2. VALUE (₹ SIZE)
     # ----------------------------
-    value_lakh = extract_value_lakh(item.get("value", ""))
-
-    if value_lakh >= 1000:       # ₹10 Cr+
-        score += 6
-    elif value_lakh >= 500:      # ₹5 Cr+
+    if "cr" in value or "crore" in value:
         score += 5
-    elif value_lakh >= 200:      # ₹2 Cr+
-        score += 3
+    elif "lakh" in value:
+        try:
+            num = float(value.split()[0])
+            if num >= 200:   # 2 Cr equivalent
+                score += 4
+            elif num >= 50:
+                score += 2
+        except:
+            pass
 
     # ----------------------------
-    # WINNER (strongest signal)
-    # ----------------------------
-    if item.get("winner"):
-        score += 6
-
-    # ----------------------------
-    # DEMAND (B2B)
+    # 3. DEMAND SIGNAL
     # ----------------------------
     if item.get("is_demand"):
+        score += 3
+
+    # ----------------------------
+    # 4. HIGH INTENT (URGENT)
+    # ----------------------------
+    if item.get("is_high_intent"):
+        score += 4
+
+    # ----------------------------
+    # 5. WINNER SIGNAL (TENDER)
+    # ----------------------------
+    if item.get("winner"):
         score += 5
+
+    # ----------------------------
+    # 6. TEXT BOOST (EXTRA SIGNALS)
+    # ----------------------------
+    if "project" in title:
+        score += 2
+
+    if "contract" in title:
+        score += 2
+
+    if "bulk" in title:
+        score += 2
 
     return score

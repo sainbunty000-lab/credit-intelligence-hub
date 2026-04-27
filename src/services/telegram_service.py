@@ -1,7 +1,16 @@
-import requests
+import importlib
+
+try:
+    requests = importlib.import_module("requests")
+except Exception:  # requests may not be installed in some environments
+    requests = None
+
 import logging
 import time
 from typing import List, Optional
+import json
+import urllib.request
+import urllib.error
 
 from config.settings import (
     TELEGRAM_BOT_TOKEN,
@@ -72,18 +81,41 @@ class TelegramService:
 
         for attempt in range(retries):
             try:
-                response = requests.post(url, json=payload, timeout=10)
+                if requests is not None:
+                    response = requests.post(url, json=payload, timeout=10)
 
-                if response.status_code == 200:
-                    logger.info("📬 Telegram message sent")
-                    return response.json()
+                    if getattr(response, "status_code", None) == 200:
+                        logger.info("📬 Telegram message sent")
+                        return response.json()
 
+                    else:
+                        logger.warning(
+                            f"⚠️ Telegram API error (attempt {attempt+1}): {getattr(response, 'text', '')}"
+                        )
                 else:
-                    logger.warning(
-                        f"⚠️ Telegram API error (attempt {attempt+1}): {response.text}"
+                    # Fallback to urllib if requests is not available
+                    data = json.dumps(payload).encode("utf-8")
+                    req = urllib.request.Request(
+                        url, data=data, headers={"Content-Type": "application/json"}
                     )
+                    try:
+                        with urllib.request.urlopen(req, timeout=10) as resp:
+                            resp_text = resp.read().decode("utf-8")
+                            logger.info("📬 Telegram message sent")
+                            try:
+                                return json.loads(resp_text)
+                            except Exception:
+                                return {"raw": resp_text}
+                    except urllib.error.HTTPError as e:
+                        try:
+                            resp_text = e.read().decode("utf-8")
+                        except Exception:
+                            resp_text = str(e)
+                        logger.warning(
+                            f"⚠️ Telegram API error (attempt {attempt+1}): {resp_text}"
+                        )
 
-            except requests.exceptions.RequestException as e:
+            except Exception as e:
                 logger.warning(
                     f"⚠️ Telegram request failed (attempt {attempt+1}): {e}"
                 )

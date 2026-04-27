@@ -1,80 +1,74 @@
 # ----------------------------
-# PYTHON
+# Python
 # ----------------------------
 __pycache__/
-*.py[cod]
-*$py.class
+*.pyc
+*.pyo
+*.pyd
+*.sqlite3
 
-# Virtual environments
+# ----------------------------
+# Virtual Environment
+# ----------------------------
 venv/
 .env/
-.venv/
-env/
-
-# Distribution / packaging
-build/
-dist/
-*.egg-info/
-
-# ----------------------------
-# ENV FILES (IMPORTANT)
-# ----------------------------
-.env
 .env.*
-!.env.example
 
 # ----------------------------
-# LOGS
-# ----------------------------
-*.log
-logs/
-
-# ----------------------------
-# PLAYWRIGHT
-# ----------------------------
-# Browser binaries cache (optional to ignore)
-ms-playwright/
-.playwright/
-
-# Screenshots / traces (if you add later)
-test-results/
-playwright-report/
-
-# ----------------------------
-# IDE / EDITOR
+# VS Code
 # ----------------------------
 .vscode/
-.idea/
-*.swp
-*.swo
 
 # ----------------------------
-# OS FILES
+# Logs
+# ----------------------------
+logs/
+*.log
+
+# ----------------------------
+# Playwright
+# ----------------------------
+playwright/.local-browsers/
+ms-playwright/
+
+# ----------------------------
+# OS Files
 # ----------------------------
 .DS_Store
 Thumbs.db
 
 # ----------------------------
-# GCP / CREDENTIALS (EXTRA SAFETY)
+# Secrets (VERY IMPORTANT)
+# ----------------------------
+.env
+.env.local
+
+# ----------------------------
+# Google Credentials (if any local)
 # ----------------------------
 *.json
-*credentials*
-*service_account*
 
 # ----------------------------
-# TEMP FILES
+# Temporary files
 # ----------------------------
-*.tmp
-*.temp
+tmp/
+temp/
 
 # ----------------------------
-# COVERAGE / TESTING
+# Coverage / Testing
 # ----------------------------
 .coverage
 htmlcov/
 .pytest_cache/
 
 # ----------------------------
-# NOTEBOOKS (if ever used)
+# Build
+# ----------------------------
+dist/
+build/
+*.egg-info/
+
+# ----------------------------
+# Jupyter (if used)
 # ----------------------------
 .ipynb_checkpoints/
