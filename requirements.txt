@@ -1,5 +1,11 @@
-gspread>=6.0.0
-google-auth>=2.29.0
-requests
-playwright
-beautifulsoup4
+gspread==6.1.2
+google-auth==2.35.0
+google-auth-oauthlib==1.2.1
+
+requests==2.32.3
+
+playwright==1.48.0
+
+python-dotenv==1.0.1
+
+urllib3>=2.2.2
