@@ -104,7 +104,7 @@ def run_b2b_monitor():
     # ----------------------------
     # Funding Filter
     # ----------------------------
-    filtered_items = [i for i in items if is_funding_opportunity(i)]
+    filtered_items = items  # 🔥 TEMP DEBUG MODE
 
     if not filtered_items:
         logger.info("❌ No funding opportunities (B2B)")
