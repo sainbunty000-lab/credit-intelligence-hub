@@ -1,22 +1,13 @@
-name: B2B Trade Monitor
+name: B2B Monitor
 
 on:
   schedule:
     - cron: '0 10 * * *'
   workflow_dispatch:
 
-concurrency:
-  group: b2b-job
-  cancel-in-progress: true
-
 jobs:
-  scrape_b2b:
+  run:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-
-    permissions:
-      contents: read
-      id-token: write
 
     steps:
       - uses: actions/checkout@v4
@@ -25,38 +16,13 @@ jobs:
         with:
           python-version: '3.10'
 
-      - uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+      - run: pip install -r requirements.txt
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+      - run: python -m playwright install chromium
 
-      # ✅ TEMP FIX (IMPORTANT)
-      - name: Skip Playwright install
-        run: echo "Skipping browser install"
-
-      - name: Authenticate to Google Cloud
-        id: auth
-        uses: google-github-actions/auth@v2
-        with:
-          workload_identity_provider: projects/915306901665/locations/global/workloadIdentityPools/github-actions-pool/providers/github-provider
-          service_account: lead-bot@my-project-47986-leads.iam.gserviceaccount.com
-
-      - name: Export Google Credentials
-        run: echo "GOOGLE_APPLICATION_CREDENTIALS=${{ steps.auth.outputs.credentials_file_path }}" >> $GITHUB_ENV
-
-      - name: Run B2B Monitor
+      - name: Run B2B
         env:
           JOB_TYPE: b2b
-          SHEET_NAME: Lead_Tracker
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_B2B_CHAT_ID }}
-        run: |
-          for i in 1 2 3; do
-            echo "Attempt $i..."
-            python -m src.main && break || sleep 10
-          done
+        run: python -m src.main
