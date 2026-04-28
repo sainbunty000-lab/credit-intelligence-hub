@@ -1,37 +1,18 @@
-from utils.logger import setup_logger
-from config.settings import JOB_TYPE
-from utils.error_handler import handle_error
-from services.telegram_service import TelegramService
-
 from scrapers.tender_scraper import run_tender_scraper
 from scrapers.b2b_monitor import run_b2b_monitor
-
-
-logger = setup_logger("main")
+import os
 
 
 def run():
-    logger.info(f"🚀 Starting job: {JOB_TYPE}")
+    job = os.getenv("JOB_TYPE", "tender")
 
-    if JOB_TYPE == "tender":
+    if job == "tender":
         run_tender_scraper()
-
-    elif JOB_TYPE == "b2b":
+    elif job == "b2b":
         run_b2b_monitor()
-
     else:
-        raise ValueError(f"❌ Invalid JOB_TYPE: {JOB_TYPE}")
-
-    logger.info("✅ Job completed successfully")
+        raise ValueError("Invalid JOB_TYPE")
 
 
 if __name__ == "__main__":
-    try:
-        run()
-
-    except Exception as e:
-        logger.exception("❌ Job failed")   # 🔥 better logging
-        handle_error(e, context=JOB_TYPE)
-        raise  # ensures GitHub marks job as failed
-
-
+    run()
